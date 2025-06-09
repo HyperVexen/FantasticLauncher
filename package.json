@@ -1,0 +1,55 @@
+{
+  "name": "FantasticLauncher",
+  "version": "1.0.0",
+  "description": "Enjoy a modern UI, profile management, built-in version downloads, and full offline support—no official launcher needed. Fast, customizable, and ready to play your way... 'We make it for your comfort'- HyperVexen",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --mac --linux",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
+  "author": "HyperVexen",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.10"
+  },
+  "build": {
+    "appId": "com.HyperVexen.fantasticlauncher",
+    "productName": "FantasticLauncher",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "splash-preload.js", 
+      "index.html",
+      "splash.html",
+      "renderer.js",
+      "splash.js",
+      "src/**/*",
+      "css/**/*",
+      "assets/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png"
+    }
+  }
+}

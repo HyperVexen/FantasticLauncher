@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FantasticLauncher - Starting...</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2d2d2d 100%);
+      color: #ffffff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Animated background particles */
+    .background-particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .particle {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      animation: float 10s infinite ease-in-out;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+        opacity: 0.2;
+      }
+      50% {
+        transform: translateY(-30px) rotate(180deg);
+        opacity: 0.8;
+      }
+    }
+
+    /* Main splash container */
+    .splash-container {
+      text-align: center;
+      z-index: 10;
+      max-width: 600px;
+      padding: 3rem;
+    }
+
+    /* Logo container */
+    .logo-container {
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+
+    .logo-image {
+      width: 180px;
+      height: auto;
+      max-height: 180px;
+      margin: 0 auto 1.5rem;
+      display: block;
+      filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+      animation: logoGlow 3s infinite ease-in-out;
+    }
+
+    @keyframes logoGlow {
+      0%, 100% {
+        filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+        transform: scale(1);
+      }
+      50% {
+        filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.6));
+        transform: scale(1.02);
+      }
+    }
+
+    /* Title */
+    .app-title {
+      font-size: 3rem;
+      font-weight: bold;
+      margin-bottom: 0.8rem;
+      background: linear-gradient(45deg, #ffffff, #cccccc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 2px 10px rgba(255, 255, 255, 0.3);
+      letter-spacing: 2px;
+    }
+
+    .app-subtitle {
+      font-size: 1.4rem;
+      opacity: 0.8;
+      margin-bottom: 3.5rem;
+      font-weight: 300;
+      color: #cccccc;
+    }
+
+    /* Loading section */
+    .loading-section {
+      width: 100%;
+    }
+
+    .loading-text {
+      font-size: 1.2rem;
+      margin-bottom: 1.5rem;
+      opacity: 0.9;
+      min-height: 1.8rem;
+      color: #ffffff;
+      font-weight: 500;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      width: 100%;
+      height: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #ffffff, #e0e0e0, #ffffff);
+      width: 0%;
+      transition: width 0.5s ease;
+      position: relative;
+      border-radius: 5px;
+    }
+
+    .progress-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      0% {
+        transform: translateX(-100%);
+      }
+      100% {
+        transform: translateX(100%);
+      }
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 255, 255, 0.2);
+      border-top: 4px solid #ffffff;
+      border-radius: 50%;
+      animation: spin 1.2s linear infinite;
+      margin: 1.5rem auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Status messages */
+    .status-message {
+      font-size: 1rem;
+      opacity: 0.7;
+      margin-top: 1.5rem;
+      min-height: 1.4rem;
+      color: #cccccc;
+    }
+
+    /* Error state */
+    .error-state {
+      color: #ff6b6b;
+    }
+
+    .error-state .logo-image {
+      filter: drop-shadow(0 0 20px rgba(255, 107, 107, 0.5));
+    }
+
+    .error-state .progress-bar {
+      background: linear-gradient(90deg, #ff6b6b, #ff5252);
+    }
+
+    .error-state .spinner {
+      border-top-color: #ff6b6b;
+    }
+
+    /* Fade in animation */
+    .fade-in {
+      animation: fadeIn 1s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Success state */
+    .success-state {
+      color: #4ade80;
+    }
+
+    .success-state .logo-image {
+      filter: drop-shadow(0 0 20px rgba(74, 222, 128, 0.5));
+    }
+
+    .success-state .progress-bar {
+      background: linear-gradient(90deg, #4ade80, #22c55e);
+    }
+
+    .success-state .spinner {
+      border-top-color: #4ade80;
+    }
+
+    /* Pulse animation for logo */
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="background-particles" id="particles"></div>
+  
+  <div class="splash-container fade-in">
+    <div class="logo-container">
+      <img src="assets/FantasticLauncherIconTransparent.png" alt="FantasticLauncher Logo" class="logo-image" id="logoImage">
+    </div>
+    
+    <h1 class="app-title">FantasticLauncher</h1>
+    <p class="app-subtitle">Preparing your Minecraft experience...</p>
+    
+    <div class="loading-section">
+      <div class="loading-text" id="loadingText">Initializing launcher...</div>
+      
+      <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      
+      <div class="spinner" id="spinner"></div>
+      
+      <div class="status-message" id="statusMessage">Starting up...</div>
+    </div>
+  </div>
+
+  <script>
+    // Create animated particles
+    function createParticles() {
+      const particlesContainer = document.getElementById('particles');
+      const particleCount = 60;
+      
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.top = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 10 + 's';
+        particle.style.animationDuration = (Math.random() * 6 + 8) + 's';
+        particlesContainer.appendChild(particle);
+      }
+    }
+
+    // Initialize splash screen
+    class SplashScreen {
+      constructor() {
+        this.loadingText = document.getElementById('loadingText');
+        this.progressBar = document.getElementById('progressBar');
+        this.statusMessage = document.getElementById('statusMessage');
+        this.spinner = document.getElementById('spinner');
+        this.logoImage = document.getElementById('logoImage');
+        this.body = document.body;
+        
+        this.isComplete = false;
+        this.isError = false;
+        this.initializationStarted = false;
+        
+        this.init();
+      }
+      
+      init() {
+        createParticles();
+        
+        // Wait for splash screen API if available
+        if (window.splashAPI) {
+          this.setupSplashAPI();
+        } else {
+          // Fallback to demo mode
+          console.log('Running in demo mode - no Electron API available');
+          this.startDemoSequence();
+        }
+      }
+      
+      setupSplashAPI() {
+        // Listen for updates from main process
+        window.splashAPI.onUpdate((data) => {
+          this.updateProgress(data.progress, data.text, data.status);
+        });
+        
+        // Listen for errors
+        window.splashAPI.onError((data) => {
+          this.showError(data.message);
+        });
+        
+        // Listen for retry signal
+        window.splashAPI.onRetry(() => {
+          this.retry();
+        });
+        
+        // Signal that splash screen is ready
+        window.splashAPI.ready();
+      }
+      
+      startDemoSequence() {
+        // Demo sequence for testing
+        const steps = [
+          { progress: 0, text: 'Initializing launcher...', status: 'Creating directories...' },
+          { progress: 16, text: 'Loading configuration...', status: 'Reading settings...' },
+          { progress: 33, text: 'Checking for updates...', status: 'Connecting to servers...' },
+          { progress: 50, text: 'Fetching version data...', status: 'Getting latest versions...' },
+          { progress: 66, text: 'Preparing game engine...', status: 'Setting up environment...' },
+          { progress: 83, text: 'Starting launcher...', status: 'Almost ready...' },
+          { progress: 100, text: 'Ready to launch!', status: 'Initialization complete' }
+        ];
+        
+        let currentStep = 0;
+        const stepInterval = setInterval(() => {
+          if (currentStep < steps.length && !this.isError) {
+            const step = steps[currentStep];
+            this.updateProgress(step.progress, step.text, step.status);
+            currentStep++;
+            
+            if (currentStep >= steps.length) {
+              clearInterval(stepInterval);
+              setTimeout(() => {
+                this.complete();
+              }, 1000);
+            }
+          } else {
+            clearInterval(stepInterval);
+          }
+        }, 1000 + Math.random() * 1000);
+      }
+      
+      updateProgress(percent, text = '', status = '') {
+        if (text) this.loadingText.textContent = text;
+        if (status) this.statusMessage.textContent = status;
+        this.progressBar.style.width = Math.min(100, Math.max(0, percent)) + '%';
+        
+        // Add pulse effect to logo during loading
+        if (percent > 0 && percent < 100) {
+          this.logoImage.classList.add('pulse');
+        }
+      }
+      
+      complete() {
+        if (this.isComplete) return;
+        
+        this.isComplete = true;
+        this.body.classList.add('success-state');
+        this.loadingText.textContent = 'Ready to launch!';
+        this.statusMessage.textContent = 'Initialization complete';
+        this.progressBar.style.width = '100%';
+        this.spinner.style.display = 'none';
+        this.logoImage.classList.remove('pulse');
+        
+        // Keep splash screen visible a bit longer to show completion
+        setTimeout(() => {
+          this.transitionToMainLauncher();
+        }, 2000);
+      }
+      
+      showError(message = 'Initialization failed') {
+        this.isError = true;
+        this.body.classList.add('error-state');
+        this.loadingText.textContent = 'Error occurred';
+        this.statusMessage.textContent = message;
+        this.spinner.style.display = 'none';
+        this.logoImage.classList.remove('pulse');
+        
+        // Show retry option after a delay
+        setTimeout(() => {
+          this.statusMessage.innerHTML = message + '<br><small style="font-size: 0.8rem; opacity: 0.6;">Retrying in 5 seconds...</small>';
+        }, 2000);
+      }
+      
+      retry() {
+        // Reset error state and try again
+        this.isError = false;
+        this.isComplete = false;
+        this.body.classList.remove('error-state');
+        this.spinner.style.display = 'block';
+        this.logoImage.classList.add('pulse');
+        
+        this.loadingText.textContent = 'Retrying initialization...';
+        this.statusMessage.textContent = 'Attempting to restart...';
+        this.progressBar.style.width = '0%';
+        
+        // Restart the process
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
+      
+      transitionToMainLauncher() {
+        // Fade out splash screen
+        this.body.style.transition = 'opacity 0.8s ease-out';
+        this.body.style.opacity = '0';
+        
+        setTimeout(() => {
+          // In Electron, this would close the splash window
+          // For now, just hide the splash screen
+          document.body.style.display = 'none';
+          
+          // Signal completion to main process if available
+          if (window.splashAPI && window.splashAPI.complete) {
+            window.splashAPI.complete();
+          }
+        }, 800);
+      }
+      
+      // Public methods for external control
+      setProgress(percent, text = '', status = '') {
+        this.updateProgress(percent, text, status);
+      }
+      
+      setText(text) {
+        this.loadingText.textContent = text;
+      }
+      
+      setStatus(status) {
+        this.statusMessage.textContent = status;
+      }
+    }
+
+    // Initialize splash screen
+    const splash = new SplashScreen();
+    
+    // Make splash instance globally available for external control
+    window.splashScreen = splash;
+    
+    // Handle page visibility changes for performance
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) {
+        document.body.style.animationPlayState = 'paused';
+      } else {
+        document.body.style.animationPlayState = 'running';
+      }
+    });
+    
+    // Handle window focus/blur for performance
+    window.addEventListener('blur', function() {
+      document.body.style.animationPlayState = 'paused';
+    });
+    
+    window.addEventListener('focus', function() {
+      document.body.style.animationPlayState = 'running';
+    });
+  </script>
+</body>
+</html>

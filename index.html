@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+  <title>FantasticLauncher</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- Sidebar Navigation -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <img src="assets/FantasticLauncher.png" alt="FantasticLauncher" class="sidebar-logo" onerror="this.style.display='none'">
+      <h2>FantasticLauncher</h2>
+      <span class="version">v1.0.0</span>
+    </div>
+    
+    <ul class="sidebar-menu">
+      <li class="menu-item active" data-page="home">
+        <i class="icon">🏠</i>
+        <span>Home</span>
+      </li>
+      <li class="menu-item" data-page="accounts">
+        <i class="icon">👤</i>
+        <span>Accounts</span>
+      </li>
+      <li class="menu-item" data-page="settings">
+        <i class="icon">⚙️</i>
+        <span>Settings</span>
+      </li>
+      <li class="menu-item" data-page="about">
+        <i class="icon">ℹ️</i>
+        <span>About</span>
+      </li>
+    </ul>
+    
+    <div class="sidebar-footer">
+      <div class="current-user">
+        <div class="user-avatar">👤</div>
+        <div class="user-info">
+          <span id="current-username">No User Selected</span>
+          <small>Click to switch</small>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <!-- Top Header -->
+    <header class="top-header">
+      <div class="header-left">
+        <h1 id="page-title">Home</h1>
+        <span id="page-subtitle">Launch your Minecraft experience</span>
+      </div>
+      <div class="header-right">
+        <button id="update-btn" class="update-button hidden">Update Available!</button>
+        <div class="connection-status online">
+          <div class="status-dot"></div>
+          <span>Online</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="page-content">
+      
+      <!-- HOME PAGE -->
+      <div id="page-home" class="page active">
+        <div class="dashboard-grid">
+          
+          <!-- Quick Launch Card -->
+          <div class="card launch-card">
+            <div class="card-header">
+              <h3>Quick Launch</h3>
+              <div class="game-status">
+                <span class="status-indicator ready"></span>
+                <span class="game-status-text">Ready to Play</span>
+              </div>
+            </div>
+            <div class="card-content">
+              
+              <!-- Username Selection -->
+              <div class="form-group">
+                <label for="username-select">Select Account</label>
+                <div class="custom-select">
+                  <select id="username-select">
+                    <option value="">Select or Add Account</option>
+                  </select>
+                  <button class="add-account-btn" id="add-account-btn">+</button>
+                </div>
+              </div>
+
+              <!-- Game Version Info -->
+              <div class="version-info">
+                <div class="version-item">
+                  <label>Minecraft Version</label>
+                  <span id="minecraft-version-display">Loading...</span>
+                </div>
+                <div class="version-item">
+                  <label>Fabric Version</label>
+                  <span id="fabric-version-display">Loading...</span>
+                </div>
+              </div>
+
+              <!-- Launch Buttons -->
+              <div class="launch-buttons">
+                <button id="download-btn" class="btn btn-secondary">
+                  <i class="icon">⬇️</i>
+                  Download Game Files
+                </button>
+                <button id="play-btn" class="btn btn-primary" disabled>
+                  <i class="icon">▶️</i>
+                  Launch Game
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- System Info Card -->
+          <div class="card system-card">
+            <div class="card-header">
+              <h3>System Status</h3>
+            </div>
+            <div class="card-content">
+              <div class="system-stats">
+                <div class="stat-item">
+                  <span class="stat-label">RAM Allocated</span>
+                  <span class="stat-value" id="ram-display">2GB - 4GB</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Java Version</span>
+                  <span class="stat-value">Auto-Detect</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Download Status</span>
+                  <span class="stat-value" id="download-status">Not Downloaded</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- News/Updates Card -->
+          <div class="card news-card">
+            <div class="card-header">
+              <h3>Latest News</h3>
+            </div>
+            <div class="card-content">
+              <div class="news-item">
+                <h4>Welcome to FantasticLauncher!</h4>
+                <p>Your new Minecraft launcher with Fabric support is ready to use.</p>
+                <small>Just now</small>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ACCOUNTS PAGE -->
+      <div id="page-accounts" class="page">
+        <div class="accounts-container">
+          
+          <div class="card">
+            <div class="card-header">
+              <h3>Manage Accounts</h3>
+              <button class="btn btn-primary" id="add-new-account">Add Account</button>
+            </div>
+            <div class="card-content">
+              
+              <!-- Add Account Form -->
+              <div class="add-account-form" id="add-account-form" style="display: none;">
+                <div class="form-group">
+                  <label for="new-username">Username</label>
+                  <input type="text" id="new-username" placeholder="Enter username" maxlength="16">
+                </div>
+                <div class="form-group">
+                  <label for="account-type">Account Type</label>
+                  <select id="account-type">
+                    <option value="offline">Offline</option>
+                    <option value="microsoft">Microsoft (Coming Soon)</option>
+                  </select>
+                </div>
+                <div class="form-actions">
+                  <button class="btn btn-primary" id="save-account">Save Account</button>
+                  <button class="btn btn-secondary" id="cancel-account">Cancel</button>
+                </div>
+              </div>
+
+              <!-- Accounts List -->
+              <div class="accounts-list" id="accounts-list">
+                <div class="account-item default">
+                  <div class="account-avatar">👤</div>
+                  <div class="account-info">
+                    <h4>No accounts added yet</h4>
+                    <p>Click "Add Account" to get started</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS PAGE -->
+      <div id="page-settings" class="page">
+        <div class="settings-container">
+          
+          <!-- Game Settings -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Game Settings</h3>
+            </div>
+            <div class="card-content">
+              
+              <div class="form-group">
+                <label for="minecraft-version-select">Minecraft Version</label>
+                <select id="minecraft-version-select">
+                  <option value="latest">Latest Release</option>
+                  <option value="1.21.1">1.21.1</option>
+                  <option value="1.20.4">1.20.4</option>
+                  <option value="1.19.4">1.19.4</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="fabric-version-select">Fabric Version</label>
+                <select id="fabric-version-select">
+                  <option value="latest">Latest</option>
+                </select>
+              </div>
+              
+            </div>
+          </div>
+
+          <!-- System Settings -->
+          <div class="card">
+            <div class="card-header">
+              <h3>System Settings</h3>
+            </div>
+            <div class="card-content">
+              
+              <div class="ram-settings">
+                <div class="form-group">
+                  <label for="ram-min">Minimum RAM</label>
+                  <select id="ram-min">
+                    <option value="1G">1 GB</option>
+                    <option value="2G" selected>2 GB</option>
+                    <option value="3G">3 GB</option>
+                    <option value="4G">4 GB</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="ram-max">Maximum RAM</label>
+                  <select id="ram-max">
+                    <option value="2G">2 GB</option>
+                    <option value="4G" selected>4 GB</option>
+                    <option value="6G">6 GB</option>
+                    <option value="8G">8 GB</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>
+                  <input type="checkbox" id="auto-update" checked>
+                  Auto-update launcher
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label>
+                  <input type="checkbox" id="close-after-launch">
+                  Close launcher after game starts
+                </label>
+              </div>
+              
+            </div>
+          </div>
+
+          <!-- Advanced Settings -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Advanced Settings</h3>
+            </div>
+            <div class="card-content">
+              
+              <div class="form-group">
+                <label for="java-path">Java Path (Optional)</label>
+                <input type="text" id="java-path" placeholder="Auto-detect Java installation">
+              </div>
+
+              <div class="form-group">
+                <label for="game-directory">Game Directory</label>
+                <input type="text" id="game-directory" placeholder="Default: %APPDATA%/.minecraft" readonly>
+              </div>
+              
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ABOUT PAGE -->
+      <div id="page-about" class="page">
+        <div class="about-container">
+          
+          <div class="card">
+            <div class="card-header">
+              <h3>About FantasticLauncher</h3>
+            </div>
+            <div class="card-content">
+              
+              <div class="about-info">
+                <div class="app-logo">
+                  <img src="assets/FantasticLauncher.png" alt="FantasticLauncher" onerror="this.style.display='none'">
+                </div>
+                <h2>FantasticLauncher</h2>
+                <p class="version">Version 1.0.0</p>
+                <p class="description">
+                  A modern Minecraft launcher with Fabric support, built for performance and ease of use.
+                </p>
+                
+                <div class="app-stats">
+                  <div class="stat">
+                    <strong>Built with</strong>
+                    <span>Electron + Node.js</span>
+                  </div>
+                  <div class="stat">
+                    <strong>Supports</strong>
+                    <span>Minecraft + Fabric</span>
+                  </div>
+                  <div class="stat">
+                    <strong>License</strong>
+                    <span>MIT License</span>
+                  </div>
+                  <div class="stat">
+                    <strong>Made by</strong>
+                    <span>HyperVexen</span>
+                  </div>
+                </div>
+                
+              </div>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <div id="status-box" class="status-container">
+        <div class="status-content">
+          <span id="status-message">Ready</span>
+          <div class="progress-container">
+            <div id="progress-bar" class="progress-bar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Modals -->
+  <div id="update-dialog" class="modal hidden">
+    <div class="modal-content">
+      <!-- Update dialog content will be inserted here -->
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
