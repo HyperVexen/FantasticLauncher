@@ -1,23 +1,29 @@
 // deploy-update.js - Complete Electron Update Deployment Script
-// Automates the entire process of creating and deploying delta updates
+// Updated with proper file management and cleanup
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { execSync } = require('child_process');
 const DeltaGenerator = require('./src/delta-generator');
 const GitHubReleaseManager = require('./src/github-release-manager');
 
 class ElectronUpdateDeployer {
   constructor(options = {}) {
+    // Environment detection
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const isCI = process.env.CI === 'true';
+    
     this.config = {
       // Version information
       oldVersion: options.oldVersion || null,
       newVersion: options.newVersion || null,
       
-      // Paths
+      // Paths - use appropriate directories based on environment
       buildOutputDir: options.buildOutputDir || './dist',
-      previousVersionDir: options.previousVersionDir || './previous-version',
-      deltaOutputDir: options.deltaOutputDir || './delta-releases',
+      previousVersionDir: options.previousVersionDir || this.getTempDir('previous-version'),
+      deltaOutputDir: options.deltaOutputDir || this.getTempDir('delta-releases'),
+      manifestOutputDir: options.manifestOutputDir || './update-manifests',
       
       // Electron specific
       appName: options.appName || 'FantasticLauncher',
@@ -33,15 +39,39 @@ class ElectronUpdateDeployer {
       createFullInstallers: options.createFullInstallers !== false,
       uploadToGitHub: options.uploadToGitHub !== false,
       isDraft: options.isDraft || false,
-      isPrerelease: options.isPrerelease || false
+      isPrerelease: options.isPrerelease || false,
+      
+      // File management
+      autoCleanup: options.autoCleanup !== false,
+      keepManifestsOnly: options.keepManifestsOnly !== false,
+      maxLocalFileSize: options.maxLocalFileSize || 10 * 1024 * 1024, // 10MB
     };
+    
+    // Ensure manifest directory exists
+    if (!fs.existsSync(this.config.manifestOutputDir)) {
+      fs.mkdirSync(this.config.manifestOutputDir, { recursive: true });
+    }
     
     this.deploymentResults = {
       deltaPackages: [],
       fullInstallers: [],
       githubRelease: null,
-      uploadedAssets: []
+      uploadedAssets: [],
+      manifestFiles: []
     };
+  }
+  
+  /**
+   * Get appropriate temp directory based on environment
+   */
+  getTempDir(subDir) {
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
+    if (isDevelopment) {
+      return `./temp/${subDir}`;
+    } else {
+      return path.join(os.tmpdir(), 'fantastic-launcher', subDir);
+    }
   }
   
   /**
@@ -75,7 +105,15 @@ class ElectronUpdateDeployer {
         await this.uploadToGitHub();
       }
       
-      // Step 7: Generate deployment report
+      // Step 7: Save manifests to trackable location
+      await this.saveManifestsToRepo();
+      
+      // Step 8: Cleanup large files
+      if (this.config.autoCleanup) {
+        await this.cleanupLargeFiles();
+      }
+      
+      // Step 9: Generate deployment report
       const report = this.generateDeploymentReport();
       
       console.log('✅ Deployment completed successfully!');
@@ -90,6 +128,9 @@ class ElectronUpdateDeployer {
     } catch (error) {
       console.error('❌ Deployment failed:', error.message);
       throw error;
+    } finally {
+      // Always cleanup temp files
+      await this.cleanupTempFiles();
     }
   }
   
@@ -114,6 +155,7 @@ class ElectronUpdateDeployer {
     
     console.log(`✓ Deploying version: ${this.config.newVersion}`);
     console.log(`✓ Build directory: ${this.config.buildOutputDir}`);
+    console.log(`✓ Manifest directory: ${this.config.manifestOutputDir}`);
   }
   
   /**
@@ -248,7 +290,10 @@ class ElectronUpdateDeployer {
           newVersionPath: currentPath,
           oldVersion: this.config.oldVersion,
           newVersion: this.config.newVersion,
-          outputPath: path.join(this.config.deltaOutputDir, `delta-${platform}-${this.config.oldVersion}-to-${this.config.newVersion}`)
+          outputPath: path.join(this.config.deltaOutputDir, `delta-${platform}-${this.config.oldVersion}-to-${this.config.newVersion}`),
+          manifestOutputPath: this.config.manifestOutputDir,
+          autoCleanup: this.config.autoCleanup,
+          useCloudStorage: this.config.uploadToGitHub
         });
         
         const deltaResult = await deltaGenerator.generateDeltaPackage();
@@ -256,8 +301,18 @@ class ElectronUpdateDeployer {
         this.deploymentResults.deltaPackages.push({
           platform: platform,
           result: deltaResult,
-          outputPath: deltaResult.outputPath
+          outputPath: deltaResult.outputPath,
+          manifestPath: deltaResult.manifestPath
         });
+        
+        // Track manifest file
+        if (deltaResult.manifestPath) {
+          this.deploymentResults.manifestFiles.push({
+            platform: platform,
+            path: deltaResult.manifestPath,
+            size: fs.statSync(deltaResult.manifestPath).size
+          });
+        }
         
         console.log(`✅ Delta for ${platform}: ${deltaResult.statistics.overallReductionPercentage.toFixed(1)}% size reduction`);
         
@@ -292,14 +347,21 @@ class ElectronUpdateDeployer {
         const stats = fs.statSync(filePath);
         
         if (stats.isFile()) {
-          this.deploymentResults.fullInstallers.push({
+          const installer = {
             name: file,
             path: filePath,
             size: stats.size,
-            platform: this.detectPlatformFromFilename(file)
-          });
+            platform: this.detectPlatformFromFilename(file),
+            isLarge: stats.size > this.config.maxLocalFileSize
+          };
           
-          console.log(`✓ Found installer: ${file} (${this.formatFileSize(stats.size)})`);
+          this.deploymentResults.fullInstallers.push(installer);
+          
+          if (installer.isLarge) {
+            console.log(`⚠️  Large installer: ${file} (${this.formatFileSize(stats.size)}) - will be uploaded only`);
+          } else {
+            console.log(`✓ Found installer: ${file} (${this.formatFileSize(stats.size)})`);
+          }
         }
       }
     }
@@ -315,7 +377,9 @@ class ElectronUpdateDeployer {
       githubOwner: this.config.githubOwner,
       githubRepo: this.config.githubRepo,
       githubToken: this.config.githubToken,
-      appName: this.config.appName
+      appName: this.config.appName,
+      createDeltaUpdates: false, // We handle delta generation ourselves
+      createFullRelease: false   // We handle full installers ourselves
     });
     
     // Prepare additional assets for upload
@@ -329,17 +393,21 @@ class ElectronUpdateDeployer {
       });
     }
     
-    // Add delta packages
+    // Add delta packages (large files only)
     for (const deltaPackage of this.deploymentResults.deltaPackages) {
-      const deltaFiles = fs.readdirSync(deltaPackage.outputPath);
-      
-      for (const deltaFile of deltaFiles) {
-        const deltaFilePath = path.join(deltaPackage.outputPath, deltaFile);
-        if (fs.statSync(deltaFilePath).isFile()) {
-          additionalAssets.push({
-            name: `${deltaPackage.platform}-${deltaFile}`,
-            path: deltaFilePath
-          });
+      if (fs.existsSync(deltaPackage.outputPath)) {
+        const deltaFiles = fs.readdirSync(deltaPackage.outputPath);
+        
+        for (const deltaFile of deltaFiles) {
+          const deltaFilePath = path.join(deltaPackage.outputPath, deltaFile);
+          const stats = fs.statSync(deltaFilePath);
+          
+          if (stats.isFile() && deltaFile !== 'update-manifest.json') {
+            additionalAssets.push({
+              name: `${deltaPackage.platform}-${deltaFile}`,
+              path: deltaFilePath
+            });
+          }
         }
       }
     }
@@ -356,6 +424,162 @@ class ElectronUpdateDeployer {
     this.deploymentResults.uploadedAssets = releaseResult.uploadResults;
     
     console.log(`✅ GitHub release created: ${releaseResult.releaseUrl}`);
+    
+    // Update manifests with download URLs
+    await this.updateManifestsWithDownloadUrls(releaseResult.release);
+  }
+  
+  /**
+   * Update manifests with actual download URLs from GitHub release
+   */
+  async updateManifestsWithDownloadUrls(release) {
+    console.log('🔗 Updating manifests with download URLs...');
+    
+    for (const manifestFile of this.deploymentResults.manifestFiles) {
+      try {
+        const manifestPath = manifestFile.path;
+        const manifestData = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        
+        // Update delta file URLs
+        for (const deltaFile of manifestData.deltaFiles || []) {
+          const assetName = `${manifestFile.platform}-${deltaFile.name}`;
+          const asset = release.assets.find(a => a.name === assetName);
+          if (asset) {
+            deltaFile.downloadUrl = asset.browser_download_url;
+          }
+        }
+        
+        // Update new files URL
+        if (manifestData.newFiles) {
+          const assetName = `${manifestFile.platform}-${manifestData.newFiles.name}`;
+          const asset = release.assets.find(a => a.name === assetName);
+          if (asset) {
+            manifestData.newFiles.downloadUrl = asset.browser_download_url;
+          }
+        }
+        
+        // Add release information
+        manifestData.releaseInfo = {
+          releaseId: release.id,
+          releaseUrl: release.html_url,
+          tagName: release.tag_name,
+          publishedAt: release.published_at
+        };
+        
+        // Save updated manifest
+        fs.writeFileSync(manifestPath, JSON.stringify(manifestData, null, 2));
+        console.log(`✓ Updated manifest: ${path.basename(manifestPath)}`);
+        
+      } catch (error) {
+        console.error(`❌ Failed to update manifest ${manifestFile.path}: ${error.message}`);
+      }
+    }
+  }
+  
+  /**
+   * Save manifests to repository (trackable location)
+   */
+  async saveManifestsToRepo() {
+    console.log('💾 Saving manifests to repository...');
+    
+    // Copy manifests to the trackable directory
+    for (const manifestFile of this.deploymentResults.manifestFiles) {
+      const sourceManifest = manifestFile.path;
+      const targetManifest = path.join(
+        this.config.manifestOutputDir, 
+        `${manifestFile.platform}-${this.config.newVersion}.json`
+      );
+      
+      if (fs.existsSync(sourceManifest)) {
+        fs.copyFileSync(sourceManifest, targetManifest);
+        console.log(`✓ Saved manifest: ${path.basename(targetManifest)}`);
+      }
+    }
+    
+    // Create a summary manifest
+    const summaryManifest = {
+      version: this.config.newVersion,
+      previousVersion: this.config.oldVersion,
+      deployedAt: new Date().toISOString(),
+      platforms: this.deploymentResults.deltaPackages.map(pkg => ({
+        platform: pkg.platform,
+        manifestFile: `${pkg.platform}-${this.config.newVersion}.json`,
+        sizeReduction: pkg.result.statistics.overallReductionPercentage
+      })),
+      release: this.deploymentResults.githubRelease ? {
+        id: this.deploymentResults.githubRelease.id,
+        url: this.deploymentResults.githubRelease.html_url,
+        tag: this.deploymentResults.githubRelease.tag_name
+      } : null
+    };
+    
+    const summaryPath = path.join(this.config.manifestOutputDir, `release-${this.config.newVersion}.json`);
+    fs.writeFileSync(summaryPath, JSON.stringify(summaryManifest, null, 2));
+    console.log(`✓ Created release summary: ${path.basename(summaryPath)}`);
+  }
+  
+  /**
+   * Clean up large files but keep manifests and small files
+   */
+  async cleanupLargeFiles() {
+    if (!this.config.autoCleanup) {
+      return;
+    }
+    
+    console.log('🧹 Cleaning up large files...');
+    
+    const cleanupPaths = [
+      this.config.deltaOutputDir,
+      this.config.previousVersionDir
+    ];
+    
+    for (const cleanupPath of cleanupPaths) {
+      if (fs.existsSync(cleanupPath)) {
+        try {
+          // Only clean up if it's a temp directory
+          if (cleanupPath.includes(os.tmpdir()) || cleanupPath.includes('./temp/')) {
+            fs.rmSync(cleanupPath, { recursive: true, force: true });
+            console.log(`✓ Cleaned up: ${cleanupPath}`);
+          }
+        } catch (error) {
+          console.warn(`⚠️  Failed to cleanup ${cleanupPath}: ${error.message}`);
+        }
+      }
+    }
+  }
+  
+  /**
+   * Clean up temporary files
+   */
+  async cleanupTempFiles() {
+    const tempPatterns = [
+      path.join(os.tmpdir(), 'fantastic-launcher*'),
+      './temp/delta-*',
+      './temp/previous-*'
+    ];
+    
+    for (const pattern of tempPatterns) {
+      try {
+        const basePath = path.dirname(pattern);
+        const filename = path.basename(pattern);
+        
+        if (fs.existsSync(basePath)) {
+          const files = fs.readdirSync(basePath);
+          const regex = new RegExp('^' + filename.replace(/\*/g, '.*') + '$');
+          
+          for (const file of files) {
+            if (regex.test(file)) {
+              const fullPath = path.join(basePath, file);
+              if (fs.existsSync(fullPath)) {
+                fs.rmSync(fullPath, { recursive: true, force: true });
+              }
+            }
+          }
+        }
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+    }
   }
   
   /**
@@ -386,7 +610,18 @@ class ElectronUpdateDeployer {
       const installers = this.deploymentResults.fullInstallers.filter(i => i.platform === platform);
       notes += `### ${this.formatPlatformName(platform)}\n`;
       for (const installer of installers) {
-        notes += `- ${installer.name} (${this.formatFileSize(installer.size)})\n`;
+        const sizeInfo = installer.isLarge ? '(Large file - download from release)' : `(${this.formatFileSize(installer.size)})`;
+        notes += `- ${installer.name} ${sizeInfo}\n`;
+      }
+      notes += '\n';
+    }
+    
+    // Add manifest information
+    if (this.deploymentResults.manifestFiles.length > 0) {
+      notes += `## 📋 Update Manifests\n\n`;
+      notes += `The following update manifests are available in the repository:\n\n`;
+      for (const manifest of this.deploymentResults.manifestFiles) {
+        notes += `- \`${path.basename(manifest.path)}\` (${this.formatFileSize(manifest.size)})\n`;
       }
       notes += '\n';
     }
@@ -412,12 +647,17 @@ class ElectronUpdateDeployer {
       return sum + (pkg.result.statistics?.estimatedBandwidthSaving || 0);
     }, 0);
     
+    const manifestSizeTotal = this.deploymentResults.manifestFiles.reduce((sum, manifest) => {
+      return sum + manifest.size;
+    }, 0);
+    
     return `
 🎉 Deployment Report for ${this.config.appName} ${this.config.newVersion}
 
 📊 Statistics:
 - Delta Packages: ${this.deploymentResults.deltaPackages.length}
 - Full Installers: ${this.deploymentResults.fullInstallers.length}
+- Manifest Files: ${this.deploymentResults.manifestFiles.length} (${this.formatFileSize(manifestSizeTotal)})
 - Total Bandwidth Saved: ${this.formatFileSize(totalDeltaReduction)}
 - GitHub Assets Uploaded: ${this.deploymentResults.uploadedAssets?.successful?.length || 0}
 
@@ -425,6 +665,11 @@ class ElectronUpdateDeployer {
 ${this.deploymentResults.deltaPackages.map(pkg => 
   `- ${pkg.platform}: ${pkg.result.statistics.overallReductionPercentage.toFixed(1)}% reduction`
 ).join('\n')}
+
+📁 File Management:
+- Large files uploaded to GitHub releases
+- Small manifests saved to repository: ${this.config.manifestOutputDir}
+- Temporary files cleaned up: ${this.config.autoCleanup ? 'Yes' : 'No'}
 
 🔗 Release URL: ${this.deploymentResults.githubRelease?.html_url || 'Not uploaded'}
 `;
@@ -435,17 +680,18 @@ ${this.deploymentResults.deltaPackages.map(pkg =>
    */
   async detectPreviousVersion() {
     try {
-      // Try to get from package.json
+      // Try to get from package.json and git tags
       const packagePath = path.join(process.cwd(), 'package.json');
       if (fs.existsSync(packagePath)) {
-        const packageData = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
-        
         // Look for version in git tags
         const gitTags = execSync('git tag --sort=-version:refname', { encoding: 'utf8' }).trim().split('\n');
         const versionTags = gitTags.filter(tag => tag.startsWith('v')).map(tag => tag.substring(1));
         
-        if (versionTags.length > 0) {
-          return versionTags[0];
+        // Exclude current version if it exists
+        const filteredTags = versionTags.filter(tag => tag !== this.config.newVersion);
+        
+        if (filteredTags.length > 0) {
+          return filteredTags[0];
         }
       }
     } catch (error) {
@@ -550,26 +796,37 @@ ${this.deploymentResults.deltaPackages.map(pkg =>
     
     if (args.length < 1) {
       console.log('Usage: node deploy-update.js <new-version> [old-version] [options]');
-      console.log('Example: node deploy-update.js 1.0.1 1.0.0 --draft');
+      console.log('Example: node deploy-update.js 1.0.1 1.0.0 --draft --cleanup');
       console.log('\nOptions:');
       console.log('  --draft         Create as draft release');
       console.log('  --prerelease    Mark as prerelease');
       console.log('  --no-delta      Skip delta updates');
       console.log('  --no-upload     Skip GitHub upload');
+      console.log('  --no-cleanup    Keep temporary files');
+      console.log('  --manifests-dir Custom manifests directory');
       process.exit(1);
     }
     
     const newVersion = args[0];
     const oldVersion = args[1];
     
-    const deployer = new ElectronUpdateDeployer({
+    const options = {
       newVersion: newVersion,
       oldVersion: oldVersion,
       isDraft: args.includes('--draft'),
       isPrerelease: args.includes('--prerelease'),
       createDeltaUpdates: !args.includes('--no-delta'),
-      uploadToGitHub: !args.includes('--no-upload')
-    });
+      uploadToGitHub: !args.includes('--no-upload'),
+      autoCleanup: !args.includes('--no-cleanup')
+    };
+    
+    // Custom manifests directory
+    const manifestsIndex = args.indexOf('--manifests-dir');
+    if (manifestsIndex !== -1 && args[manifestsIndex + 1]) {
+      options.manifestOutputDir = args[manifestsIndex + 1];
+    }
+    
+    const deployer = new ElectronUpdateDeployer(options);
     
     try {
       const result = await deployer.deployUpdate();
