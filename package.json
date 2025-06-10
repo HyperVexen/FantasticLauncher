@@ -17,7 +17,9 @@
     "electron-builder": "^24.13.3"
   },
   "dependencies": {
-    "adm-zip": "^0.5.10"
+    "adm-zip": "^0.5.16",
+    "brew": "^0.0.8",
+    "wine": "^0.9.13"
   },
   "build": {
     "appId": "com.HyperVexen.fantasticlauncher",
@@ -28,7 +30,7 @@
     "files": [
       "main.js",
       "preload.js",
-      "splash-preload.js", 
+      "splash-preload.js",
       "index.html",
       "splash.html",
       "renderer.js",
