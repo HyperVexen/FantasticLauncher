@@ -135,5 +135,41 @@ dist
 .yarn/install-state.gz
 .pnp.*
 dist
-delta-releases
+delta-releases/
+!delta-releases/.gitkeep
+delta-output/
+!delta-output/.gitkeep
+
+# Temporary files
+temp-*/
+*.tmp
+*.backup
+
+# Build outputs (if not needed in repo)
+dist/
+build/
+out/
+
+# Update system files
+updates/
+backups/
+previous-version/
+
+# Platform-specific build files
+win-unpacked/
+mac/
+linux-unpacked/
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+*.zip
+*.tar.gz
+
+# Node modules and logs
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 .env
