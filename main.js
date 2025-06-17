@@ -52,10 +52,10 @@ app.whenReady().then(() => {
   // Initialize delta updater instead of update checker
   if (splashManager) {
     deltaUpdater = new DeltaUpdater({
-      githubOwner: 'XcaLiber1290',
+      githubOwner: 'HyperVexen',
       githubRepo: 'FantasticLauncher',
       currentVersion: app.getVersion(),
-      appName: 'FantasticLauncher',
+      appNaSme: 'FantasticLauncher',
       autoDownload: false,
       autoInstall: false,
       checkInterval: 3600000 // Check every hour
