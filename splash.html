@@ -59,7 +59,7 @@
     .splash-container {
       text-align: center;
       z-index: 10;
-      max-width: 600px;
+      max-width: 650px;
       padding: 3rem;
     }
 
@@ -106,9 +106,87 @@
     .app-subtitle {
       font-size: 1.4rem;
       opacity: 0.8;
-      margin-bottom: 3.5rem;
+      margin-bottom: 3rem;
       font-weight: 300;
       color: #cccccc;
+    }
+
+    /* NEW: Update status section */
+    .update-status {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      margin-bottom: 2rem;
+      min-height: 60px;
+      display: none; /* Hidden by default */
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .update-status.visible {
+      display: flex;
+    }
+
+    .update-status.downloading {
+      border-color: #4f46e5;
+      background: rgba(79, 70, 229, 0.1);
+    }
+
+    .update-status.ready {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .update-status.available {
+      border-color: #f59e0b;
+      background: rgba(245, 158, 11, 0.1);
+    }
+
+    .update-title {
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .update-details {
+      font-size: 0.85rem;
+      opacity: 0.8;
+      color: #cccccc;
+    }
+
+    .update-icon {
+      font-size: 1.2rem;
+    }
+
+    /* Enhanced progress section */
+    .progress-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .progress-text {
+      font-size: 1.2rem;
+      font-weight: 500;
+      color: #ffffff;
+    }
+
+    .progress-percentage {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #4f46e5;
+      background: rgba(79, 70, 229, 0.1);
+      padding: 0.25rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid rgba(79, 70, 229, 0.3);
     }
 
     /* Loading section */
@@ -125,25 +203,27 @@
       font-weight: 500;
     }
 
-    /* Progress bar */
+    /* Enhanced progress bar */
     .progress-container {
       width: 100%;
-      height: 12px;
+      height: 14px;
       background: rgba(255, 255, 255, 0.1);
-      border-radius: 6px;
+      border-radius: 7px;
       overflow: hidden;
       margin-bottom: 1.5rem;
       position: relative;
       border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
     }
 
     .progress-bar {
       height: 100%;
-      background: linear-gradient(90deg, #ffffff, #e0e0e0, #ffffff);
+      background: linear-gradient(90deg, #4f46e5, #6366f1, #8b5cf6);
       width: 0%;
-      transition: width 0.5s ease;
+      transition: width 0.3s ease;
       position: relative;
-      border-radius: 5px;
+      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(79, 70, 229, 0.5);
     }
 
     .progress-bar::after {
@@ -166,15 +246,30 @@
       }
     }
 
-    /* Spinner */
+    /* Update-specific progress bar styles */
+    .progress-bar.update-download {
+      background: linear-gradient(90deg, #10b981, #14b8a6, #06b6d4);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    }
+
+    .progress-bar.update-install {
+      background: linear-gradient(90deg, #f59e0b, #eab308, #84cc16);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+    }
+
+    /* Enhanced spinner */
     .spinner {
       width: 50px;
       height: 50px;
       border: 4px solid rgba(255, 255, 255, 0.2);
-      border-top: 4px solid #ffffff;
+      border-top: 4px solid #4f46e5;
       border-radius: 50%;
       animation: spin 1.2s linear infinite;
       margin: 1.5rem auto;
+    }
+
+    .spinner.update-mode {
+      border-top-color: #10b981;
     }
 
     @keyframes spin {
@@ -189,6 +284,42 @@
       margin-top: 1.5rem;
       min-height: 1.4rem;
       color: #cccccc;
+    }
+
+    /* Enhanced status indicators */
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-top: 1rem;
+    }
+
+    .status-indicator.info {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #93c5fd;
+    }
+
+    .status-indicator.success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #6ee7b7;
+    }
+
+    .status-indicator.warning {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+    }
+
+    .status-indicator.error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
     }
 
     /* Error state */
@@ -208,22 +339,6 @@
       border-top-color: #ff6b6b;
     }
 
-    /* Fade in animation */
-    .fade-in {
-      animation: fadeIn 1s ease-in;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
     /* Success state */
     .success-state {
       color: #4ade80;
@@ -241,6 +356,31 @@
       border-top-color: #4ade80;
     }
 
+    /* Update mode styles */
+    .update-mode {
+      color: #10b981;
+    }
+
+    .update-mode .logo-image {
+      filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.5));
+    }
+
+    /* Fade in animation */
+    .fade-in {
+      animation: fadeIn 1s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
     /* Pulse animation for logo */
     .pulse {
       animation: pulse 2s infinite;
@@ -253,6 +393,67 @@
       50% {
         transform: scale(1.05);
       }
+    }
+
+    /* Slide in animation for update status */
+    .slide-in {
+      animation: slideIn 0.5s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Game detection indicators */
+    .detection-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+    }
+
+    .detection-info.hidden {
+      display: none;
+    }
+
+    .game-status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #6b7280;
+    }
+
+    .status-dot.ready {
+      background: #10b981;
+      box-shadow: 0 0 4px rgba(16, 185, 129, 0.5);
+    }
+
+    .status-dot.needs-download {
+      background: #f59e0b;
+      box-shadow: 0 0 4px rgba(245, 158, 11, 0.5);
+    }
+
+    .status-dot.not-found {
+      background: #ef4444;
+      box-shadow: 0 0 4px rgba(239, 68, 68, 0.5);
     }
   </style>
 </head>
@@ -267,16 +468,40 @@
     <h1 class="app-title">FantasticLauncher</h1>
     <p class="app-subtitle">Preparing your Minecraft experience...</p>
     
+    <!-- NEW: Update Status Section -->
+    <div class="update-status" id="updateStatus">
+      <div class="update-title">
+        <span class="update-icon" id="updateIcon">📦</span>
+        <span id="updateTitle">Checking for updates...</span>
+      </div>
+      <div class="update-details" id="updateDetails">Connecting to update servers...</div>
+    </div>
+    
     <div class="loading-section">
-      <div class="loading-text" id="loadingText">Initializing launcher...</div>
-      
-      <div class="progress-container">
-        <div class="progress-bar" id="progressBar"></div>
+      <!-- Enhanced progress section -->
+      <div class="progress-section">
+        <div class="progress-info">
+          <div class="loading-text" id="loadingText">Initializing launcher...</div>
+          <div class="progress-percentage" id="progressPercentage">0%</div>
+        </div>
+        
+        <div class="progress-container">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
       </div>
       
       <div class="spinner" id="spinner"></div>
       
       <div class="status-message" id="statusMessage">Starting up...</div>
+      
+      <!-- NEW: Game Detection Info -->
+      <div class="detection-info hidden" id="detectionInfo">
+        <div class="game-status-indicator">
+          <div class="status-dot" id="gameStatusDot"></div>
+          <span id="gameStatusText">Checking game installation...</span>
+        </div>
+        <div id="gameDownloadSize"></div>
+      </div>
     </div>
   </div>
 
@@ -297,19 +522,33 @@
       }
     }
 
-    // Initialize splash screen
+    // Enhanced splash screen with update support
     class SplashScreen {
       constructor() {
         this.loadingText = document.getElementById('loadingText');
         this.progressBar = document.getElementById('progressBar');
+        this.progressPercentage = document.getElementById('progressPercentage');
         this.statusMessage = document.getElementById('statusMessage');
         this.spinner = document.getElementById('spinner');
         this.logoImage = document.getElementById('logoImage');
         this.body = document.body;
         
+        // NEW: Update status elements
+        this.updateStatus = document.getElementById('updateStatus');
+        this.updateIcon = document.getElementById('updateIcon');
+        this.updateTitle = document.getElementById('updateTitle');
+        this.updateDetails = document.getElementById('updateDetails');
+        
+        // NEW: Game detection elements
+        this.detectionInfo = document.getElementById('detectionInfo');
+        this.gameStatusDot = document.getElementById('gameStatusDot');
+        this.gameStatusText = document.getElementById('gameStatusText');
+        this.gameDownloadSize = document.getElementById('gameDownloadSize');
+        
         this.isComplete = false;
         this.isError = false;
         this.initializationStarted = false;
+        this.currentUpdateInfo = null;
         
         this.init();
       }
@@ -331,6 +570,16 @@
         // Listen for updates from main process
         window.splashAPI.onUpdate((data) => {
           this.updateProgress(data.progress, data.text, data.status);
+          
+          // Handle update information
+          if (data.updateInfo) {
+            this.handleUpdateInfo(data.updateInfo);
+          }
+          
+          // Handle game detection information
+          if (data.gameDetection) {
+            this.handleGameDetection(data.gameDetection);
+          }
         });
         
         // Listen for errors
@@ -343,19 +592,30 @@
           this.retry();
         });
         
+        // Listen for completion signal
+        window.splashAPI.onComplete((data) => {
+          if (data && data.updateStatus) {
+            this.showFinalUpdateStatus(data.updateStatus);
+          }
+          this.complete();
+        });
+        
         // Signal that splash screen is ready
         window.splashAPI.ready();
       }
       
       startDemoSequence() {
-        // Demo sequence for testing
+        // Enhanced demo sequence with update simulation
         const steps = [
-          { progress: 0, text: 'Initializing launcher...', status: 'Creating directories...' },
-          { progress: 16, text: 'Loading configuration...', status: 'Reading settings...' },
-          { progress: 33, text: 'Checking for updates...', status: 'Connecting to servers...' },
-          { progress: 50, text: 'Fetching version data...', status: 'Getting latest versions...' },
-          { progress: 66, text: 'Preparing game engine...', status: 'Setting up environment...' },
-          { progress: 83, text: 'Starting launcher...', status: 'Almost ready...' },
+          { progress: 1, text: 'Initializing update system...', status: 'Setting up delta updater' },
+          { progress: 5, text: 'Checking for launcher updates...', status: 'Connecting to GitHub...', updateInfo: { available: true, version: '1.0.1', size: '15 MB', inProgress: false } },
+          { progress: 15, text: 'Downloading update automatically...', status: 'Small update detected', updateInfo: { available: true, version: '1.0.1', size: '15 MB', inProgress: true } },
+          { progress: 25, text: 'Update downloaded!', status: 'Ready to install after startup', updateInfo: { available: true, version: '1.0.1', size: '15 MB', autoDownloaded: true } },
+          { progress: 35, text: 'Initializing launcher...', status: 'Creating directories...' },
+          { progress: 50, text: 'Scanning for existing game files...', status: 'Auto-detecting installations' },
+          { progress: 70, text: 'Verifying game components...', status: 'Checking Minecraft installation', gameDetection: { hasExisting: true, needsDownload: false } },
+          { progress: 85, text: 'Processing detection results...', status: 'Game installation verified' },
+          { progress: 95, text: 'Preparing main interface...', status: 'Loading launcher UI' },
           { progress: 100, text: 'Ready to launch!', status: 'Initialization complete' }
         ];
         
@@ -364,6 +624,15 @@
           if (currentStep < steps.length && !this.isError) {
             const step = steps[currentStep];
             this.updateProgress(step.progress, step.text, step.status);
+            
+            if (step.updateInfo) {
+              this.handleUpdateInfo(step.updateInfo);
+            }
+            
+            if (step.gameDetection) {
+              this.handleGameDetection(step.gameDetection);
+            }
+            
             currentStep++;
             
             if (currentStep >= steps.length) {
@@ -375,17 +644,102 @@
           } else {
             clearInterval(stepInterval);
           }
-        }, 1000 + Math.random() * 1000);
+        }, 800 + Math.random() * 400);
       }
       
       updateProgress(percent, text = '', status = '') {
         if (text) this.loadingText.textContent = text;
         if (status) this.statusMessage.textContent = status;
-        this.progressBar.style.width = Math.min(100, Math.max(0, percent)) + '%';
+        
+        const clampedPercent = Math.min(100, Math.max(0, percent));
+        this.progressBar.style.width = clampedPercent + '%';
+        this.progressPercentage.textContent = Math.round(clampedPercent) + '%';
+        
+        // Update progress bar color based on context
+        this.progressBar.className = 'progress-bar';
+        if (text.toLowerCase().includes('update') || text.toLowerCase().includes('download')) {
+          if (text.toLowerCase().includes('install')) {
+            this.progressBar.classList.add('update-install');
+          } else {
+            this.progressBar.classList.add('update-download');
+          }
+        }
         
         // Add pulse effect to logo during loading
         if (percent > 0 && percent < 100) {
           this.logoImage.classList.add('pulse');
+        }
+      }
+      
+      // NEW: Handle update information
+      handleUpdateInfo(updateInfo) {
+        this.currentUpdateInfo = updateInfo;
+        
+        if (updateInfo.available) {
+          this.updateStatus.classList.add('visible', 'slide-in');
+          
+          if (updateInfo.inProgress) {
+            this.updateStatus.className = 'update-status visible downloading';
+            this.updateIcon.textContent = '⬇️';
+            this.updateTitle.textContent = `Downloading Update ${updateInfo.version}`;
+            this.updateDetails.textContent = `Downloading ${updateInfo.size} automatically...`;
+            this.body.classList.add('update-mode');
+            this.spinner.classList.add('update-mode');
+          } else if (updateInfo.autoDownloaded) {
+            this.updateStatus.className = 'update-status visible ready';
+            this.updateIcon.textContent = '✅';
+            this.updateTitle.textContent = `Update ${updateInfo.version} Ready`;
+            this.updateDetails.textContent = `Downloaded ${updateInfo.size} - Will install after startup`;
+          } else {
+            this.updateStatus.className = 'update-status visible available';
+            this.updateIcon.textContent = '📦';
+            this.updateTitle.textContent = `Update ${updateInfo.version} Available`;
+            this.updateDetails.textContent = `${updateInfo.size} - Will be shown in launcher`;
+          }
+        } else {
+          this.updateStatus.classList.remove('visible');
+        }
+      }
+      
+      // NEW: Handle game detection information
+      handleGameDetection(gameDetection) {
+        if (gameDetection.hasExisting !== undefined) {
+          this.detectionInfo.classList.remove('hidden');
+          
+          if (!gameDetection.hasExisting || gameDetection.needsDownload) {
+            if (!gameDetection.hasExisting) {
+              this.gameStatusDot.className = 'status-dot not-found';
+              this.gameStatusText.textContent = 'No game installation found';
+              this.gameDownloadSize.textContent = gameDetection.downloadSize || '~150 MB needed';
+            } else {
+              this.gameStatusDot.className = 'status-dot needs-download';
+              this.gameStatusText.textContent = `${gameDetection.missingCount || 1} components missing`;
+              this.gameDownloadSize.textContent = gameDetection.downloadSize || '~50 MB needed';
+            }
+          } else {
+            this.gameStatusDot.className = 'status-dot ready';
+            this.gameStatusText.textContent = 'Game installation verified';
+            this.gameDownloadSize.textContent = 'Ready to play!';
+          }
+        }
+      }
+      
+      // NEW: Show final update status
+      showFinalUpdateStatus(updateStatus) {
+        if (updateStatus.available) {
+          let message = '';
+          if (updateStatus.downloaded) {
+            message = `✅ Update ${updateStatus.version} ready to install (${updateStatus.size})`;
+          } else {
+            message = `📦 Update ${updateStatus.version} available (${updateStatus.size})`;
+          }
+          
+          // Show status indicator
+          const indicator = document.createElement('div');
+          indicator.className = updateStatus.downloaded ? 'status-indicator success' : 'status-indicator info';
+          indicator.innerHTML = `<span>${updateStatus.downloaded ? '✅' : '📦'}</span> ${message}`;
+          
+          this.statusMessage.appendChild(indicator);
         }
       }
       
@@ -395,15 +749,20 @@
         this.isComplete = true;
         this.body.classList.add('success-state');
         this.loadingText.textContent = 'Ready to launch!';
-        this.statusMessage.textContent = 'Initialization complete';
         this.progressBar.style.width = '100%';
+        this.progressPercentage.textContent = '100%';
         this.spinner.style.display = 'none';
         this.logoImage.classList.remove('pulse');
+        
+        // Keep update status visible if there was an update
+        if (this.currentUpdateInfo && this.currentUpdateInfo.available) {
+          this.updateStatus.classList.add('ready');
+        }
         
         // Keep splash screen visible a bit longer to show completion
         setTimeout(() => {
           this.transitionToMainLauncher();
-        }, 2000);
+        }, 2500);
       }
       
       showError(message = 'Initialization failed') {
@@ -413,6 +772,7 @@
         this.statusMessage.textContent = message;
         this.spinner.style.display = 'none';
         this.logoImage.classList.remove('pulse');
+        this.updateStatus.classList.remove('visible');
         
         // Show retry option after a delay
         setTimeout(() => {
@@ -424,13 +784,17 @@
         // Reset error state and try again
         this.isError = false;
         this.isComplete = false;
-        this.body.classList.remove('error-state');
+        this.body.classList.remove('error-state', 'update-mode');
+        this.spinner.classList.remove('update-mode');
         this.spinner.style.display = 'block';
         this.logoImage.classList.add('pulse');
+        this.updateStatus.classList.remove('visible');
+        this.detectionInfo.classList.add('hidden');
         
         this.loadingText.textContent = 'Retrying initialization...';
         this.statusMessage.textContent = 'Attempting to restart...';
         this.progressBar.style.width = '0%';
+        this.progressPercentage.textContent = '0%';
         
         // Restart the process
         setTimeout(() => {
@@ -445,7 +809,6 @@
         
         setTimeout(() => {
           // In Electron, this would close the splash window
-          // For now, just hide the splash screen
           document.body.style.display = 'none';
           
           // Signal completion to main process if available
@@ -466,6 +829,10 @@
       
       setStatus(status) {
         this.statusMessage.textContent = status;
+      }
+      
+      setUpdateInfo(updateInfo) {
+        this.handleUpdateInfo(updateInfo);
       }
     }
 

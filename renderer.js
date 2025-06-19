@@ -631,6 +631,663 @@ class DeltaUpdateManager {
   }
 }
 
+class UpdateStatusManager {
+  constructor() {
+    this.updateInfo = null;
+    this.isVisible = false;
+    this.downloadProgress = 0;
+    this.statusBar = null;
+    this.createStatusBar();
+    this.setupEventListeners();
+  }
+  
+  createStatusBar() {
+    // Create update status bar element
+    this.statusBar = document.createElement('div');
+    this.statusBar.id = 'update-status-bar';
+    this.statusBar.className = 'update-status-bar hidden';
+    this.statusBar.innerHTML = `
+      <div class="update-status-content">
+        <div class="update-icon">📦</div>
+        <div class="update-text">
+          <div class="update-title">Update Available</div>
+          <div class="update-details">Checking for updates...</div>
+        </div>
+        <div class="update-progress">
+          <div class="update-progress-bar">
+            <div class="update-progress-fill"></div>
+          </div>
+          <div class="update-percentage">0%</div>
+        </div>
+        <div class="update-actions">
+          <button class="update-btn download-btn" id="downloadUpdateBtn">Download</button>
+          <button class="update-btn install-btn hidden" id="installUpdateBtn">Install</button>
+          <button class="update-btn dismiss-btn" id="dismissUpdateBtn">×</button>
+        </div>
+      </div>
+    `;
+    
+    // Add CSS styles
+    this.addStatusBarStyles();
+    
+    // Insert at the top of the page
+    document.body.insertBefore(this.statusBar, document.body.firstChild);
+    
+    // Add button event listeners
+    this.setupStatusBarButtons();
+  }
+  
+  addStatusBarStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+      .update-status-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+        color: white;
+        padding: 12px 20px;
+        z-index: 10000;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        transform: translateY(-100%);
+        transition: transform 0.3s ease-in-out;
+      }
+      
+      .update-status-bar.visible {
+        transform: translateY(0);
+      }
+      
+      .update-status-bar.downloading {
+        background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+      }
+      
+      .update-status-bar.ready {
+        background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+      }
+      
+      .update-status-bar.error {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      }
+      
+      .update-status-content {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      
+      .update-icon {
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+      }
+      
+      .update-text {
+        flex: 1;
+        min-width: 0;
+      }
+      
+      .update-title {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 2px;
+      }
+      
+      .update-details {
+        font-size: 12px;
+        opacity: 0.9;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      
+      .update-progress {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 200px;
+      }
+      
+      .update-progress-bar {
+        flex: 1;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      
+      .update-progress-fill {
+        height: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        width: 0%;
+        transition: width 0.3s ease;
+        border-radius: 3px;
+      }
+      
+      .update-percentage {
+        font-size: 12px;
+        font-weight: 600;
+        min-width: 35px;
+        text-align: right;
+      }
+      
+      .update-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .update-btn {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+      
+      .download-btn {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+      
+      .download-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-1px);
+      }
+      
+      .install-btn {
+        background: rgba(255, 255, 255, 0.9);
+        color: #059669;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+      }
+      
+      .install-btn:hover {
+        background: white;
+        transform: translateY(-1px);
+      }
+      
+      .dismiss-btn {
+        background: transparent;
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 6px 10px;
+        font-size: 14px;
+        line-height: 1;
+      }
+      
+      .dismiss-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      
+      .update-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      
+      .update-btn.hidden {
+        display: none;
+      }
+      
+      /* Adjust main content when status bar is visible */
+      body.update-status-visible {
+        padding-top: 60px;
+      }
+      
+      .update-status-visible .main-content {
+        margin-top: 60px;
+      }
+      
+      /* Pulsing animation for new updates */
+      .update-status-bar.pulse {
+        animation: updatePulse 2s infinite;
+      }
+      
+      @keyframes updatePulse {
+        0%, 100% {
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        50% {
+          box-shadow: 0 2px 20px rgba(79, 70, 229, 0.3);
+        }
+      }
+      
+      /* Responsive design */
+      @media (max-width: 768px) {
+        .update-status-bar {
+          padding: 10px 16px;
+        }
+        
+        .update-status-content {
+          gap: 12px;
+        }
+        
+        .update-progress {
+          min-width: 150px;
+        }
+        
+        .update-details {
+          display: none;
+        }
+        
+        .update-btn {
+          padding: 4px 8px;
+          font-size: 11px;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  setupStatusBarButtons() {
+    const downloadBtn = document.getElementById('downloadUpdateBtn');
+    const installBtn = document.getElementById('installUpdateBtn');
+    const dismissBtn = document.getElementById('dismissUpdateBtn');
+    
+    downloadBtn.addEventListener('click', () => this.downloadUpdate());
+    installBtn.addEventListener('click', () => this.installUpdate());
+    dismissBtn.addEventListener('click', () => this.dismissUpdate());
+  }
+  
+  setupEventListeners() {
+    // Listen for update events from main process
+    if (window.deltaUpdater) {
+      window.deltaUpdater.onUpdateAvailable((updateData) => {
+        this.showUpdateAvailable(updateData);
+      });
+      
+      window.deltaUpdater.onUpdateProgress((progressData) => {
+        this.updateProgress(progressData);
+      });
+      
+      window.deltaUpdater.onUpdateDownloaded((updateData) => {
+        this.showUpdateReady(updateData);
+      });
+      
+      window.deltaUpdater.onUpdateError((errorData) => {
+        this.showUpdateError(errorData);
+      });
+    }
+    
+    // Listen for update information from splash screen
+    if (window.electronAPI) {
+      window.electronAPI.on('launcher-update-available', (updateData) => {
+        this.handleUpdateFromSplash(updateData);
+      });
+    }
+  }
+  
+  showUpdateAvailable(updateData) {
+    this.updateInfo = updateData.updateInfo || updateData;
+    
+    const updateSize = this.calculateUpdateSize(this.updateInfo);
+    const isSmallUpdate = updateSize <= 30 * 1024 * 1024; // 30MB threshold
+    
+    // Update status bar content
+    this.statusBar.querySelector('.update-icon').textContent = '📦';
+    this.statusBar.querySelector('.update-title').textContent = 
+      `Update ${this.updateInfo.version} Available`;
+    this.statusBar.querySelector('.update-details').textContent = 
+      `${this.formatFileSize(updateSize)} - ${isSmallUpdate ? 'Small update' : 'Large update'}`;
+    
+    // Show appropriate buttons
+    const downloadBtn = document.getElementById('downloadUpdateBtn');
+    const installBtn = document.getElementById('installUpdateBtn');
+    
+    downloadBtn.classList.remove('hidden');
+    installBtn.classList.add('hidden');
+    downloadBtn.textContent = isSmallUpdate ? 'Download' : `Download ${this.formatFileSize(updateSize)}`;
+    
+    // Show status bar
+    this.showStatusBar('available');
+  }
+  
+  handleUpdateFromSplash(updateData) {
+    this.updateInfo = updateData.updateInfo;
+    
+    if (updateData.autoDownloaded) {
+      this.showUpdateReady(updateData);
+    } else if (updateData.updateInfo) {
+      this.showUpdateAvailable(updateData);
+    }
+  }
+  
+  showUpdateReady(updateData) {
+    this.updateInfo = updateData.updateInfo || updateData;
+    
+    // Update status bar content
+    this.statusBar.querySelector('.update-icon').textContent = '✅';
+    this.statusBar.querySelector('.update-title').textContent = 
+      `Update ${this.updateInfo.version} Ready`;
+    this.statusBar.querySelector('.update-details').textContent = 
+      'Downloaded and ready to install';
+    
+    // Show install button
+    const downloadBtn = document.getElementById('downloadUpdateBtn');
+    const installBtn = document.getElementById('installUpdateBtn');
+    
+    downloadBtn.classList.add('hidden');
+    installBtn.classList.remove('hidden');
+    
+    // Hide progress bar
+    this.statusBar.querySelector('.update-progress').style.display = 'none';
+    
+    // Show status bar
+    this.showStatusBar('ready');
+  }
+  
+  showUpdateError(errorData) {
+    // Update status bar content
+    this.statusBar.querySelector('.update-icon').textContent = '⚠️';
+    this.statusBar.querySelector('.update-title').textContent = 'Update Failed';
+    this.statusBar.querySelector('.update-details').textContent = 
+      errorData.error || 'Failed to download update';
+    
+    // Show retry button
+    const downloadBtn = document.getElementById('downloadUpdateBtn');
+    const installBtn = document.getElementById('installUpdateBtn');
+    
+    downloadBtn.classList.remove('hidden');
+    downloadBtn.textContent = 'Retry';
+    installBtn.classList.add('hidden');
+    
+    // Hide progress bar
+    this.statusBar.querySelector('.update-progress').style.display = 'none';
+    
+    // Show status bar
+    this.showStatusBar('error');
+  }
+  
+  updateProgress(progressData) {
+    if (progressData.type === 'download') {
+      this.downloadProgress = progressData.progress || 0;
+      
+      // Update progress bar
+      const progressFill = this.statusBar.querySelector('.update-progress-fill');
+      const progressPercentage = this.statusBar.querySelector('.update-percentage');
+      
+      progressFill.style.width = `${this.downloadProgress}%`;
+      progressPercentage.textContent = `${Math.round(this.downloadProgress)}%`;
+      
+      // Update title during download
+      this.statusBar.querySelector('.update-title').textContent = 
+        `Downloading Update ${this.updateInfo?.version || ''}`;
+      
+      if (progressData.file) {
+        this.statusBar.querySelector('.update-details').textContent = 
+          `Downloading ${progressData.file}...`;
+      }
+      
+      // Show status bar as downloading
+      this.showStatusBar('downloading');
+    }
+  }
+  
+  showStatusBar(type = 'available') {
+    this.isVisible = true;
+    this.statusBar.classList.remove('hidden', 'available', 'downloading', 'ready', 'error');
+    this.statusBar.classList.add('visible', type);
+    
+    // Add pulse effect for new updates
+    if (type === 'available') {
+      this.statusBar.classList.add('pulse');
+      setTimeout(() => {
+        this.statusBar.classList.remove('pulse');
+      }, 6000);
+    }
+    
+    // Adjust main content
+    document.body.classList.add('update-status-visible');
+  }
+  
+  hideStatusBar() {
+    this.isVisible = false;
+    this.statusBar.classList.remove('visible');
+    this.statusBar.classList.add('hidden');
+    
+    // Remove main content adjustment
+    document.body.classList.remove('update-status-visible');
+  }
+  
+  async downloadUpdate() {
+    if (!this.updateInfo) return;
+    
+    try {
+      // Disable download button
+      const downloadBtn = document.getElementById('downloadUpdateBtn');
+      downloadBtn.disabled = true;
+      downloadBtn.textContent = 'Downloading...';
+      
+      // Show progress bar
+      this.statusBar.querySelector('.update-progress').style.display = 'flex';
+      
+      // Start download
+      if (window.deltaUpdater) {
+        await window.deltaUpdater.downloadUpdate();
+      } else {
+        // Simulate download for demo
+        await this.simulateDownload();
+      }
+      
+    } catch (error) {
+      console.error('Download failed:', error);
+      this.showUpdateError({ error: error.message });
+    }
+  }
+  
+  async installUpdate() {
+    if (!this.updateInfo) return;
+    
+    try {
+      // Show confirmation dialog
+      const result = confirm(
+        `Install update ${this.updateInfo.version}?\n\n` +
+        'The application will restart to complete the installation.'
+      );
+      
+      if (!result) return;
+      
+      // Disable install button
+      const installBtn = document.getElementById('installUpdateBtn');
+      installBtn.disabled = true;
+      installBtn.textContent = 'Installing...';
+      
+      // Update status
+      this.statusBar.querySelector('.update-title').textContent = 'Installing Update...';
+      this.statusBar.querySelector('.update-details').textContent = 
+        'Application will restart automatically';
+      
+      // Start installation
+      if (window.deltaUpdater) {
+        await window.deltaUpdater.installUpdate();
+      } else {
+        // Simulate installation for demo
+        setTimeout(() => {
+          alert('Demo: Update would be installed and app would restart');
+          this.hideStatusBar();
+        }, 2000);
+      }
+      
+    } catch (error) {
+      console.error('Installation failed:', error);
+      this.showUpdateError({ error: error.message });
+    }
+  }
+  
+  dismissUpdate() {
+    this.hideStatusBar();
+    
+    // Store dismissal in localStorage to avoid showing again this session
+    if (this.updateInfo) {
+      localStorage.setItem(
+        'dismissedUpdate', 
+        JSON.stringify({
+          version: this.updateInfo.version,
+          timestamp: Date.now()
+        })
+      );
+    }
+  }
+  
+  calculateUpdateSize(updateInfo) {
+    if (!updateInfo) return 0;
+    
+    let totalSize = 0;
+    
+    // Add delta files size
+    if (updateInfo.deltaFiles) {
+      for (const deltaFile of updateInfo.deltaFiles) {
+        totalSize += deltaFile.size || 0;
+      }
+    }
+    
+    // Add new files size
+    if (updateInfo.newFiles) {
+      totalSize += updateInfo.newFiles.size || 0;
+    }
+    
+    return totalSize;
+  }
+  
+  formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+  
+  // Simulate download progress for demo
+  async simulateDownload() {
+    return new Promise((resolve) => {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress >= 100) {
+          progress = 100;
+          clearInterval(interval);
+          this.showUpdateReady({ updateInfo: this.updateInfo });
+          resolve();
+        }
+        
+        this.updateProgress({
+          type: 'download',
+          progress: progress,
+          file: progress < 50 ? 'delta-patches.zip' : 'new-files.zip'
+        });
+      }, 200);
+    });
+  }
+  
+  // Check if update was dismissed
+  isUpdateDismissed(version) {
+    try {
+      const dismissed = localStorage.getItem('dismissedUpdate');
+      if (dismissed) {
+        const data = JSON.parse(dismissed);
+        const hoursSinceDismissal = (Date.now() - data.timestamp) / (1000 * 60 * 60);
+        
+        // Don't show again for 24 hours if dismissed
+        return data.version === version && hoursSinceDismissal < 24;
+      }
+    } catch (error) {
+      console.error('Error checking dismissed updates:', error);
+    }
+    return false;
+  }
+}
+
+// Initialize update status manager
+const updateStatusManager = new UpdateStatusManager();
+
+// Enhanced initialization to include update status
+async function initLauncher() {
+  try {
+    showStatus('Starting launcher...', 'info');
+    
+    // Load saved data
+    loadAccounts();
+    loadSettings();
+    
+    // Initialize crash detection event listeners
+    setupCrashDetectionListeners();
+    
+    // Initialize launcher backend
+    if (window.launcher) {
+      await window.launcher.initialize();
+      
+      // Get latest versions
+      const minecraftVersion = await window.launcher.getLatestMinecraftVersion();
+      gameState.minecraftVersion = minecraftVersion;
+      minecraftVersionDisplay.textContent = minecraftVersion || 'Loading...';
+      
+      const fabricVersion = await window.launcher.getLatestFabricVersion(minecraftVersion);
+      gameState.fabricVersion = fabricVersion;
+      fabricVersionDisplay.textContent = fabricVersion || 'Loading...';
+      
+      // Get crash detection status
+      await updateCrashDetectionStatus();
+      
+      // Check for version updates and update UI accordingly
+      smartUpdateDetector.loadStoredVersions();
+      const updateInfo = await smartUpdateDetector.checkForVersionUpdates(window.launcher);
+      updateDownloadButtonBasedOnVersions(updateInfo, gameState);
+      
+      showStatus('Launcher initialized successfully', 'success');
+    } else {
+      // Demo mode
+      minecraftVersionDisplay.textContent = '1.21.1';
+      fabricVersionDisplay.textContent = '0.15.0';
+      gameState.minecraftVersion = '1.21.1';
+      gameState.fabricVersion = '0.15.0';
+      showStatus('Demo mode active', 'info');
+      
+      // Show demo update for testing
+      setTimeout(() => {
+        updateStatusManager.showUpdateAvailable({
+          updateInfo: {
+            version: '1.0.1',
+            deltaFiles: [{ size: 15 * 1024 * 1024 }], // 15MB
+            releaseNotes: 'Bug fixes and performance improvements'
+          }
+        });
+      }, 3000);
+    }
+    
+    // Update UI based on current state
+    updateUI();
+    
+  } catch (error) {
+    showStatus(`Failed to initialize launcher: ${error.message}`, 'error');
+    console.error('Launcher initialization error:', error);
+    
+    // Report error
+    if (window.errorHandler) {
+      window.errorHandler.reportError(error, 'launcher_initialization');
+    }
+  }
+}
+
+// Listen for update events from main process
+if (window.electronAPI) {
+  window.electronAPI.on('launcher-update-available', (updateData) => {
+    if (!updateStatusManager.isUpdateDismissed(updateData.updateInfo?.version)) {
+      updateStatusManager.handleUpdateFromSplash(updateData);
+    }
+  });
+}
+
 // Initialize delta update manager
 const deltaUpdateManager = new DeltaUpdateManager();
 
@@ -2043,3 +2700,4 @@ window.updateGameStatusIndicator = updateGameStatusIndicator;
 window.updateDownloadButtonBasedOnVersions = updateDownloadButtonBasedOnVersions;
 window.enhancedDownloadGameFiles = enhancedDownloadGameFiles;
 window.checkForDeltaUpdates = checkForDeltaUpdates; // NEW: Delta update check function
+window.updateStatusManager = updateStatusManager;

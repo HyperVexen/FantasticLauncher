@@ -1,23 +1,26 @@
-// main.js - Enhanced with Crash Detection and Delta Update System
-// Main process file for the FantasticLauncher application
+// main.js - Enhanced with Complete Update Integration
 
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const launcher = require('./src/launcher');
 const assetVerifier = require('./src/asset-verifier');
 const game = require('./src/game');
-const DeltaUpdater = require('./src/delta-updater'); // NEW: Delta updater instead of update-checker
+const DeltaUpdater = require('./src/delta-updater');
 const SplashScreenManager = require('./splash');
 
 // Global references
 let splashManager;
-let deltaUpdater; // NEW: Delta updater instance
+let deltaUpdater;
 let isAppReady = false;
 
 // Crash detection state
 let crashDetectionEnabled = true;
 let lastCrashReport = null;
 let repairInProgress = false;
+
+// Update state
+let updateCheckCompleted = false;
+let pendingUpdateInfo = null;
 
 // Prevent multiple instances
 const gotTheLock = app.requestSingleInstanceLock();
@@ -49,22 +52,6 @@ app.whenReady().then(() => {
   // Create and show splash screen first
   createSplashScreen();
   
-  // Initialize delta updater instead of update checker
-  if (splashManager) {
-    deltaUpdater = new DeltaUpdater({
-      githubOwner: 'HyperVexen',
-      githubRepo: 'FantasticLauncher',
-      currentVersion: app.getVersion(),
-      appNaSme: 'FantasticLauncher',
-      autoDownload: false,
-      autoInstall: false,
-      checkInterval: 3600000 // Check every hour
-    });
-    
-    // Set up delta updater callbacks
-    setupDeltaUpdaterCallbacks();
-  }
-  
   // Set up crash detection callbacks
   setupCrashDetectionCallbacks();
   
@@ -75,104 +62,6 @@ app.whenReady().then(() => {
     }
   });
 });
-
-// NEW: Set up delta updater callbacks
-function setupDeltaUpdaterCallbacks() {
-  if (!deltaUpdater) return;
-  
-  deltaUpdater.setCallbacks({
-    onUpdateAvailable: (updateInfo) => {
-      console.log('Delta update available:', updateInfo);
-      
-      // Notify all windows about available update
-      BrowserWindow.getAllWindows().forEach(window => {
-        if (!window.isDestroyed()) {
-          window.webContents.send('delta-update-available', {
-            updateInfo: updateInfo,
-            currentVersion: deltaUpdater.getConfig().currentVersion,
-            newVersion: updateInfo.version,
-            deltaSize: updateInfo.deltaFiles?.reduce((total, file) => total + (file.size || 0), 0) || 0,
-            releaseNotes: updateInfo.releaseNotes
-          });
-        }
-      });
-    },
-    
-    onUpdateDownloaded: (updateInfo) => {
-      console.log('Delta update downloaded:', updateInfo);
-      
-      // Notify all windows about downloaded update
-      BrowserWindow.getAllWindows().forEach(window => {
-        if (!window.isDestroyed()) {
-          window.webContents.send('delta-update-downloaded', {
-            updateInfo: updateInfo,
-            readyToInstall: true
-          });
-        }
-      });
-    },
-    
-    onUpdateProgress: (progressInfo) => {
-      // Send progress updates to renderer
-      BrowserWindow.getAllWindows().forEach(window => {
-        if (!window.isDestroyed()) {
-          window.webContents.send('delta-update-progress', progressInfo);
-        }
-      });
-    },
-    
-    onUpdateInstalled: (updateInfo) => {
-      console.log('Delta update installed:', updateInfo);
-      
-      // Show restart dialog
-      const mainWindow = splashManager ? splashManager.getMainWindow() : null;
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        const response = dialog.showMessageBoxSync(mainWindow, {
-          type: 'info',
-          buttons: ['Restart Now', 'Restart Later'],
-          defaultId: 0,
-          title: 'Update Installed',
-          message: 'Update installed successfully',
-          detail: `${updateInfo.appName} has been updated to version ${updateInfo.version}. A restart is required to apply the changes.`
-        });
-        
-        if (response === 0) {
-          deltaUpdater.restartApplication();
-        }
-      }
-    },
-    
-    onError: (error) => {
-      console.error('Delta updater error:', error);
-      
-      // Notify all windows about update error
-      BrowserWindow.getAllWindows().forEach(window => {
-        if (!window.isDestroyed()) {
-          window.webContents.send('delta-update-error', {
-            error: error.message,
-            timestamp: new Date().toISOString()
-          });
-        }
-      });
-    },
-    
-    onStateChange: (state) => {
-      // Broadcast state changes to all windows
-      BrowserWindow.getAllWindows().forEach(window => {
-        if (!window.isDestroyed()) {
-          window.webContents.send('delta-updater-state-change', state);
-        }
-      });
-    }
-  });
-  
-  // Start checking for updates
-  setTimeout(() => {
-    deltaUpdater.checkForUpdates().catch(error => {
-      console.error('Initial update check failed:', error);
-    });
-  }, 5000); // Check 5 seconds after startup
-}
 
 // Set up crash detection callbacks
 function setupCrashDetectionCallbacks() {
@@ -458,7 +347,7 @@ ipcMain.on('splash-error-report', (event, errorData) => {
 ipcMain.on('splash-request-retry', () => {
   console.log('Splash screen requesting retry');
   if (splashManager) {
-    splashManager.startEnhancedInitialization();
+    splashManager.startEnhancedInitializationWithUpdates();
   }
 });
 
@@ -515,7 +404,7 @@ ipcMain.handle('launcher:get-latest-fabric-version', async (event, minecraftVers
   }
 });
 
-// NEW: Auto-detection handler
+// Auto-detection handler
 ipcMain.handle('launcher:auto-detect-game', async (event, minecraftVersion, fabricVersion) => {
   try {
     console.log(`Auto-detecting game for Minecraft ${minecraftVersion} with Fabric ${fabricVersion}...`);
@@ -557,7 +446,7 @@ ipcMain.handle('launcher:auto-detect-game', async (event, minecraftVersion, fabr
   }
 });
 
-// NEW: Get detection results handler
+// Get detection results handler
 ipcMain.handle('launcher:get-detection-results', async () => {
   try {
     return assetVerifier.gameDetectionResult || null;
@@ -567,7 +456,7 @@ ipcMain.handle('launcher:get-detection-results', async () => {
   }
 });
 
-// NEW: Check if game is ready handler
+// Check if game is ready handler
 ipcMain.handle('launcher:is-game-ready', async () => {
   try {
     return assetVerifier.isGameReadyToLaunch();
@@ -577,7 +466,7 @@ ipcMain.handle('launcher:is-game-ready', async () => {
   }
 });
 
-// NEW: Get missing components handler
+// Get missing components handler
 ipcMain.handle('launcher:get-missing-components', async () => {
   try {
     return assetVerifier.getMissingComponentsList();
@@ -621,7 +510,7 @@ ipcMain.handle('launcher:download-game-files', async (event, minecraftVersion, f
   }
 });
 
-// NEW: Smart download for missing components only
+// Smart download for missing components only
 ipcMain.handle('launcher:download-missing-components', async (event, minecraftVersion, fabricVersion, missingComponents) => {
   try {
     console.log(`Downloading missing components: ${missingComponents.join(', ')}`);
@@ -714,7 +603,7 @@ ipcMain.handle('launcher:cleanup-backups', async (event, olderThanDays) => {
   }
 });
 
-// NEW: Crash detection IPC handlers
+// Crash detection IPC handlers
 ipcMain.handle('crash:get-statistics', async () => {
   try {
     return game.getCrashStatistics();
@@ -786,10 +675,10 @@ ipcMain.handle('crash:get-auto-repair-status', async () => {
 // NEW: Delta updater IPC handlers
 ipcMain.handle('delta-updater:check-for-updates', async () => {
   try {
-    if (!deltaUpdater) {
+    if (!splashManager || !splashManager.deltaUpdater) {
       return { available: false, error: 'Delta updater not initialized' };
     }
-    const updateInfo = await deltaUpdater.checkForUpdates();
+    const updateInfo = await splashManager.deltaUpdater.checkForUpdates();
     return { available: !!updateInfo, updateInfo: updateInfo };
   } catch (error) {
     console.error('Delta update check error:', error);
@@ -799,10 +688,10 @@ ipcMain.handle('delta-updater:check-for-updates', async () => {
 
 ipcMain.handle('delta-updater:download-update', async () => {
   try {
-    if (!deltaUpdater) {
+    if (!splashManager || !splashManager.deltaUpdater) {
       throw new Error('Delta updater not initialized');
     }
-    const result = await deltaUpdater.downloadUpdate();
+    const result = await splashManager.deltaUpdater.downloadUpdate();
     return { success: true, result: result };
   } catch (error) {
     console.error('Delta update download error:', error);
@@ -812,10 +701,10 @@ ipcMain.handle('delta-updater:download-update', async () => {
 
 ipcMain.handle('delta-updater:install-update', async () => {
   try {
-    if (!deltaUpdater) {
+    if (!splashManager || !splashManager.deltaUpdater) {
       throw new Error('Delta updater not initialized');
     }
-    const result = await deltaUpdater.installUpdate();
+    const result = await splashManager.deltaUpdater.installUpdate();
     return { success: true, result: result };
   } catch (error) {
     console.error('Delta update install error:', error);
@@ -825,10 +714,10 @@ ipcMain.handle('delta-updater:install-update', async () => {
 
 ipcMain.handle('delta-updater:get-state', async () => {
   try {
-    if (!deltaUpdater) {
+    if (!splashManager || !splashManager.deltaUpdater) {
       return { initialized: false };
     }
-    return { initialized: true, ...deltaUpdater.getState() };
+    return { initialized: true, ...splashManager.deltaUpdater.getState() };
   } catch (error) {
     console.error('Failed to get delta updater state:', error);
     return { initialized: false, error: error.message };
@@ -837,10 +726,10 @@ ipcMain.handle('delta-updater:get-state', async () => {
 
 ipcMain.handle('delta-updater:get-statistics', async () => {
   try {
-    if (!deltaUpdater) {
+    if (!splashManager || !splashManager.deltaUpdater) {
       return null;
     }
-    return deltaUpdater.getUpdateStatistics();
+    return splashManager.deltaUpdater.getUpdateStatistics();
   } catch (error) {
     console.error('Failed to get delta updater statistics:', error);
     return null;
@@ -849,10 +738,10 @@ ipcMain.handle('delta-updater:get-statistics', async () => {
 
 ipcMain.handle('delta-updater:cancel-download', async () => {
   try {
-    if (!deltaUpdater) {
+    if (!splashManager || !splashManager.deltaUpdater) {
       throw new Error('Delta updater not initialized');
     }
-    deltaUpdater.cancelDownload();
+    splashManager.deltaUpdater.cancelDownload();
     return { success: true };
   } catch (error) {
     console.error('Failed to cancel delta update download:', error);
@@ -862,10 +751,10 @@ ipcMain.handle('delta-updater:cancel-download', async () => {
 
 ipcMain.handle('delta-updater:force-check', async () => {
   try {
-    if (!deltaUpdater) {
+    if (!splashManager || !splashManager.deltaUpdater) {
       throw new Error('Delta updater not initialized');
     }
-    const updateInfo = await deltaUpdater.forceCheckForUpdates();
+    const updateInfo = await splashManager.deltaUpdater.forceCheckForUpdates();
     return { available: !!updateInfo, updateInfo: updateInfo };
   } catch (error) {
     console.error('Delta updater force check error:', error);
@@ -875,13 +764,50 @@ ipcMain.handle('delta-updater:force-check', async () => {
 
 ipcMain.handle('delta-updater:restart-app', async () => {
   try {
-    if (!deltaUpdater) {
+    if (!splashManager || !splashManager.deltaUpdater) {
       throw new Error('Delta updater not initialized');
     }
-    await deltaUpdater.restartApplication();
+    await splashManager.deltaUpdater.restartApplication();
     return { success: true };
   } catch (error) {
     console.error('Failed to restart application:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// NEW: Update status management for main window
+ipcMain.handle('update-status:get-current-status', async () => {
+  try {
+    if (splashManager) {
+      return splashManager.getUpdateStatus();
+    }
+    return { available: false };
+  } catch (error) {
+    console.error('Failed to get update status:', error);
+    return { available: false, error: error.message };
+  }
+});
+
+ipcMain.handle('update-status:download-large-update', async () => {
+  try {
+    if (splashManager) {
+      return await splashManager.downloadLargeUpdate();
+    }
+    return { success: false, error: 'Splash manager not available' };
+  } catch (error) {
+    console.error('Failed to download large update:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('update-status:install-update', async () => {
+  try {
+    if (splashManager) {
+      return await splashManager.installUpdate();
+    }
+    return { success: false, error: 'Splash manager not available' };
+  } catch (error) {
+    console.error('Failed to install update:', error);
     return { success: false, error: error.message };
   }
 });
@@ -902,7 +828,7 @@ ipcMain.handle('system:get-info', () => {
   };
 });
 
-// NEW: System utilities
+// System utilities
 ipcMain.handle('system:get-game-directories', () => {
   try {
     return {
@@ -954,7 +880,7 @@ ipcMain.handle('system:check-java-version', async () => {
   }
 });
 
-// NEW: Launcher state management
+// Launcher state management
 let launcherState = {
   initialized: false,
   gameReady: false,
@@ -964,13 +890,13 @@ let launcherState = {
   crashDetectionEnabled: crashDetectionEnabled,
   lastCrashReport: lastCrashReport,
   repairInProgress: repairInProgress,
-  deltaUpdaterState: null
+  updateStatus: null
 };
 
 ipcMain.handle('launcher:get-state', () => {
-  // Include delta updater state if available
-  if (deltaUpdater) {
-    launcherState.deltaUpdaterState = deltaUpdater.getState();
+  // Include update status if available
+  if (splashManager) {
+    launcherState.updateStatus = splashManager.getUpdateStatus();
   }
   return launcherState;
 });
@@ -988,7 +914,7 @@ ipcMain.handle('launcher:set-state', (event, newState) => {
   return launcherState;
 });
 
-// NEW: Enhanced logging system
+// Enhanced logging system
 const logHistory = [];
 const MAX_LOG_ENTRIES = 1000;
 
@@ -1036,7 +962,7 @@ ipcMain.handle('logger:get-logs', (event, limit = 100) => {
   return logHistory.slice(-limit);
 });
 
-// NEW: Error handling and reporting
+// Error handling and reporting
 ipcMain.handle('error:report', async (event, errorData) => {
   console.error('Error reported from renderer:', errorData);
   
@@ -1106,7 +1032,6 @@ app.on('certificate-error', (event, webContents, url, error, certificate, callba
 module.exports = {
   getSplashManager: () => splashManager,
   getMainWindow: () => splashManager ? splashManager.getMainWindow() : null,
-  getDeltaUpdater: () => deltaUpdater, // NEW: Delta updater getter
   getLauncherState: () => launcherState,
   updateLauncherState: (newState) => {
     launcherState = { ...launcherState, ...newState };
@@ -1121,5 +1046,6 @@ module.exports = {
     lastCrashReport: lastCrashReport,
     repairInProgress: repairInProgress
   }),
-  triggerManualRepair: triggerManualRepair
+  triggerManualRepair: triggerManualRepair,
+  getUpdateStatus: () => splashManager ? splashManager.getUpdateStatus() : null
 };
