@@ -1,0 +1,5 @@
+{
+  "name": "Minecraft Launcher Masterplan UI",
+  "description": "A modern, feature-rich custom Minecraft launcher UI built with React and Tailwind CSS, based on the provided masterplan. It features a sleek dark mode, glass morphism effects, and a comprehensive layout for managing game instances, mods, and settings.",
+  "requestFramePermissions": []
+}
