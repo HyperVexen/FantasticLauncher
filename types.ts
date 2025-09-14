@@ -16,7 +16,7 @@ export interface GameInstance {
   loader: 'Fabric' | 'Forge' | 'Quilt' | 'Vanilla';
   loaderVersion: string;
   lastPlayed: string;
-  imageUrl: string;
+  iconUrl: string;
 }
 
 export interface Mod {

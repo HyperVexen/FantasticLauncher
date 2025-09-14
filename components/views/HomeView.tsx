@@ -6,27 +6,27 @@ import { MOCK_INSTANCES, MOCK_SELECTED_INSTANCE } from '../../constants';
 import type { GameInstance, User } from '../../types';
 
 const InstanceCard: React.FC<{ instance: GameInstance }> = ({ instance }) => (
-    <Card className="flex flex-col group">
-      <div className="relative h-40 overflow-hidden">
-        <img src={instance.imageUrl} alt={instance.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-        <div className="absolute bottom-0 left-0 p-4">
-          <h3 className="text-xl font-bold text-white">{instance.name}</h3>
-          <p className="text-sm text-slate-300">{instance.minecraftVersion}</p>
+  <Card className="flex flex-col group p-4 justify-between h-full">
+    <div>
+      <div className="flex items-start gap-4 mb-4">
+        <img src={instance.iconUrl} alt={`${instance.name} icon`} className="w-16 h-16 rounded-lg flex-shrink-0 object-cover" />
+        <div className="flex-1">
+          <h3 className="text-lg font-bold text-white">{instance.name}</h3>
+          <p className="text-sm text-slate-400">{instance.minecraftVersion}</p>
         </div>
       </div>
-      <div className="p-4 flex-1 flex flex-col">
-        <div className="flex justify-between text-sm text-slate-400">
-          <span>{instance.loader} {instance.loaderVersion}</span>
-          <span>{instance.lastPlayed}</span>
-        </div>
-        <div className="mt-4 flex gap-2">
-          <Button variant="primary" size="sm" className="flex-1" Icon={PlayIcon}>Play</Button>
-          <Button variant="secondary" size="sm" Icon={Cog6ToothIcon}>Settings</Button>
-        </div>
+      <div className="text-xs text-slate-400 flex justify-between items-center">
+        <span className="bg-slate-700/50 px-2 py-1 rounded">{instance.loader} {instance.loaderVersion || ''}</span>
+        <span>{instance.lastPlayed}</span>
       </div>
-    </Card>
+    </div>
+    <div className="mt-4 flex gap-2">
+      <Button variant="primary" size="sm" className="flex-1" Icon={PlayIcon}>Play</Button>
+      <Button variant="secondary" size="sm" Icon={Cog6ToothIcon}>Settings</Button>
+    </div>
+  </Card>
 );
+
 
 interface HomeViewProps {
     user: User;

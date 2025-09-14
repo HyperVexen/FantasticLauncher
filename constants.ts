@@ -29,7 +29,7 @@ export const MOCK_INSTANCES: GameInstance[] = [
     loader: 'Fabric',
     loaderVersion: '0.15.7',
     lastPlayed: '2 hours ago',
-    imageUrl: 'https://picsum.photos/seed/atm9/400/225'
+    iconUrl: 'https://picsum.photos/seed/atm9-icon/96/96'
   },
   {
     id: '2',
@@ -38,7 +38,7 @@ export const MOCK_INSTANCES: GameInstance[] = [
     loader: 'Vanilla',
     loaderVersion: '',
     lastPlayed: '1 day ago',
-    imageUrl: 'https://picsum.photos/seed/snapshot/400/225'
+    iconUrl: 'https://picsum.photos/seed/snapshot-icon/96/96'
   },
   {
     id: '3',
@@ -47,7 +47,7 @@ export const MOCK_INSTANCES: GameInstance[] = [
     loader: 'Forge',
     loaderVersion: '43.3.0',
     lastPlayed: '3 days ago',
-    imageUrl: 'https://picsum.photos/seed/bettermc/400/225'
+    iconUrl: 'https://picsum.photos/seed/bettermc-icon/96/96'
   },
     {
     id: '4',
@@ -56,7 +56,7 @@ export const MOCK_INSTANCES: GameInstance[] = [
     loader: 'Fabric',
     loaderVersion: '0.15.6',
     lastPlayed: '1 week ago',
-    imageUrl: 'https://picsum.photos/seed/create/400/225'
+    iconUrl: 'https://picsum.photos/seed/create-icon/96/96'
   },
 ];
 
